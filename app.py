@@ -1,4 +1,3 @@
-
 import pandas as pd
 import sqlite3
 import hashlib
@@ -138,8 +137,27 @@ def show_prediction_form():
         travel = st.selectbox("Business Travel", ["Travel_Rarely", "Travel_Frequently", "Non-Travel"])
         department = st.selectbox("Department", ["Sales", "Research & Development", "Human Resources"])
         education_field = st.selectbox("Education Field", ["Life Sciences", "Medical", "Marketing", "Technical Degree", "Human Resources", "Other"])
-        education = st.selectbox("Education Level", [1, 2, 3, 4, 5])
-        job_level = st.selectbox("Job Level", [1, 2, 3, 4, 5])
+
+        # Add context for Education Level
+        education_levels = {
+            1: "Below College",
+            2: "College",
+            3: "Bachelor",
+            4: "Master",
+            5: "Doctor"
+        }
+        education = st.selectbox("Education Level", options=list(education_levels.keys()), format_func=lambda x: education_levels[x])
+
+        # Add context for Job Level
+        job_levels = {
+            1: "Entry Level",
+            2: "Junior",
+            3: "Mid-Level",
+            4: "Senior",
+            5: "Executive"
+        }
+        job_level = st.selectbox("Job Level", options=list(job_levels.keys()), format_func=lambda x: job_levels[x])
+
         job_role = st.selectbox("Job Role", ["Sales Executive", "Research Scientist", "Laboratory Technician", "Manager", "Manufacturing Director", "Healthcare Representative", "Human Resources", "Technical Architect", "Other"])
         gender = st.radio("Gender", ["Male", "Female"])
         marital = st.selectbox("Marital Status", ["Single", "Married", "Divorced"])
@@ -231,11 +249,76 @@ def main():
         if role == "Employee":
             show_prediction_form()
         elif role == "HR":
-            tab1, tab2 = st.tabs(["🏠 Home", "📈 View Predictions"])
+            tab1, tab2, tab3 = st.tabs(["🏠 Home", "📈 View Predictions", "📊 Insights"])
             with tab1:
                 st.write("Welcome HR! You can review predictions in the other tab.")
             with tab2:
                 show_hr_dashboard()
+            with tab3:
+                show_hr_insights()
+
+def show_hr_insights():
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import sqlite3
+
+    st.header("HR Insights for Retention Strategy")
+
+    # Load predictions from DB
+    conn = sqlite3.connect('attrition.db')
+    df_pred = pd.read_sql_query("SELECT * FROM predictions", conn)
+    conn.close()
+
+    if df_pred.empty:
+        st.info("No prediction data available to generate insights.")
+        return
+
+    # Convert probability to percentage
+    df_pred['Probability'] = df_pred['probability'] = df_pred['probability'].astype(float)
+    df_pred['ProbabilityPercent'] = df_pred['Probability'] * 100
+
+    # Show basic stats
+    st.subheader("Prediction Summary")
+    st.write(f"Total Predictions: {len(df_pred)}")
+    st.write(f"Average Attrition Risk Probability: {df_pred['ProbabilityPercent'].mean():.2f}%")
+    st.write(f"High Risk Count (Probability > 50%): {(df_pred['ProbabilityPercent'] > 50).sum()}")
+
+    # Distribution of probabilities
+    st.subheader("Attrition Risk Probability Distribution")
+    fig, ax = plt.subplots()
+    sns.histplot(df_pred['ProbabilityPercent'], bins=20, kde=True, ax=ax)
+    ax.set_xlabel("Attrition Risk Probability (%)")
+    ax.set_ylabel("Count")
+    st.pyplot(fig)
+
+    # Load original dataset for feature insights
+    df = pd.read_csv('WA_Fn-UseC_-HR-Employee-Attrition.csv')
+
+    # Merge predictions with original data on username if possible
+    # Since username may not be in original data, we can only show general insights
+
+    # Show key factors from original dataset
+    st.subheader("Key Factors Affecting Attrition")
+
+    # Show attrition rate by Department
+    dept_attrition = df.groupby('Department')['Attrition'].apply(lambda x: (x=='Yes').mean()).reset_index()
+    dept_attrition.columns = ['Department', 'Attrition Rate']
+    st.write("Attrition Rate by Department")
+    st.bar_chart(dept_attrition.set_index('Department'))
+
+    # Show attrition rate by Job Role
+    role_attrition = df.groupby('JobRole')['Attrition'].apply(lambda x: (x=='Yes').mean()).reset_index()
+    role_attrition.columns = ['Job Role', 'Attrition Rate']
+    st.write("Attrition Rate by Job Role")
+    st.bar_chart(role_attrition.set_index('Job Role'))
+
+    # Show attrition rate by Education Field
+    edu_attrition = df.groupby('EducationField')['Attrition'].apply(lambda x: (x=='Yes').mean()).reset_index()
+    edu_attrition.columns = ['Education Field', 'Attrition Rate']
+    st.write("Attrition Rate by Education Field")
+    st.bar_chart(edu_attrition.set_index('Education Field'))
+
 
 if __name__ == "__main__":
     main()
