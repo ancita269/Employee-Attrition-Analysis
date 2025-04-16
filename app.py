@@ -126,9 +126,6 @@ def show_prediction_form():
         age = st.slider("Age", 18, 60)
         distance = st.slider("Distance From Home", 1, 30)
         income = st.number_input("Monthly Income", 1000, 20000)
-        daily_rate = st.number_input("Daily Rate", 100, 1500)
-        monthly_rate = st.number_input("Monthly Rate", 1000, 25000)
-        hourly_rate = st.number_input("Hourly Rate", 10, 100)
         percent_hike = st.slider("Percent Salary Hike", 0, 50)
         num_companies = st.slider("Number of Companies Worked", 0, 10)
         total_years = st.slider("Total Working Years", 0, 40)
@@ -170,14 +167,12 @@ def show_prediction_form():
             'EducationField': [education_field],
             'EnvironmentSatisfaction': [environment_satisfaction],
             'Gender': [gender],
-            'HourlyRate': [hourly_rate],
             'JobInvolvement': [job_involvement],
             'JobLevel': [job_level],
             'JobRole': [job_role],
             'JobSatisfaction': [job_satisfaction],
             'MaritalStatus': [marital],
             'MonthlyIncome': [income],
-            'MonthlyRate': [monthly_rate],
             'NumCompaniesWorked': [num_companies],
             'OverTime': [overtime],
             'PercentSalaryHike': [percent_hike],
@@ -191,7 +186,6 @@ def show_prediction_form():
             'YearsInCurrentRole': [years_in_role],
             'YearsSinceLastPromotion': [years_since_promo],
             'YearsWithCurrManager': [years_with_manager],
-            'DailyRate': [daily_rate]
             })
 
             transformed = preprocessor.transform(input_data)
@@ -213,7 +207,7 @@ def show_hr_dashboard():
             color = 'red' if val == 'High Risk' else 'green'
             return f'color: {color}'
 
-        styled_df = df.style.applymap(color_risk, subset=['Prediction'])
+        styled_df = df.style.map(color_risk, subset=['Prediction'])
         st.dataframe(styled_df)
 
     else:
